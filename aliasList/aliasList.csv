@@ -1,0 +1,4 @@
+File path,title,aliases
+_index.md,Data Hub Guide,['/data-hub/data-catalog/index.html']
+data-hub-catalog\register-data.md,Register OData Resources in the Data Hub Catalog,"['/data-hub/data-hub-catalog/register.html', '/data-hub/data-hub-catalog/register']"
+share-data\_index.md,Share Data Between Apps,"['/data-hub/data-hub-catalog/use-data-catalog.html', '/datahub/general/share-data/index.html', '/data-hub/data-hub-catalog/use-data-catalog']"
