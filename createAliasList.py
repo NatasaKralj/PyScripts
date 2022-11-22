@@ -16,7 +16,7 @@ import csv
 import logging
 
 # Walk through files
-def walkFiles(startDir, fileFormat, nextStep):
+def walkFiles(startDir, fileFormat, *nextSteps):
     for dirPath, dirNames, allFiles in os.walk(startDir):
         for name in allFiles:
             # File path that includes name of file
@@ -29,7 +29,8 @@ def walkFiles(startDir, fileFormat, nextStep):
                 with open(filePath, mode='r', encoding="utf-8") as file:
                     # Loads file into frontmatter parser
                     post = frontmatter.load(file)
-                    nextStep(post, relFilePath)
+                    for nextStep in nextSteps:
+                        nextStep(post, relFilePath)
 
 # Grab aliases
 def aliasGrab(post, relFilePath):
@@ -44,6 +45,11 @@ def aliasGrab(post, relFilePath):
         # Each entry of ailas for a file gets added to aliasCompare list
         for each in aliases:
             aliasCompare.append(each)
+
+def mapGrab(post, relFilePath):
+    map = post.get("mapped")
+    if map is True:
+        print("This doc is mapped!")
 
 # Alias check
 def aliasCheck(post, relFilePath):
@@ -63,16 +69,13 @@ def aliasCheck(post, relFilePath):
             link = node.attrs['href']
             # Removes any anchor from link
             cleanedLink = link.split('#', maxsplit=1)
-            # If the link contains anything before # and has not been checked previously
-            if cleanedLink[0] != '' and cleanedLink[0] not in linkChecked:
+            # If the link contains anything before #
+            if cleanedLink[0] != '':
                 # Checks if the link is in the alias list
                 if cleanedLink[0] in aliasCompare:
                     # If it is an alias, adds it to log
                     logging.basicConfig(filename='warnings.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
                     logging.warning('Link %s in file %s is an alias, please replace', cleanedLink[0], relFilePath)
-                # Once link has been checked against alias list once, it's added to checked list
-                linkChecked.append(cleanedLink[0])
-
 
 # Grab working directory
 startDir = input('Specify FULL PATH to local content directory: ')
@@ -80,9 +83,8 @@ startDir = input('Specify FULL PATH to local content directory: ')
 # Empty lists to help with parsing data
 aliasList = []
 aliasCompare = []
-linkChecked = []
 
-walkFiles(startDir, '.md', aliasGrab)
+walkFiles(startDir, '.md', aliasGrab, mapGrab)
 walkFiles(startDir, '.md', aliasCheck)
 
 # Writes a list of all aliases as a JSON file (list of dicts)
