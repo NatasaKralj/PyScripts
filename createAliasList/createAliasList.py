@@ -6,12 +6,12 @@ It outputs a CSV list of all files containing aliases.
 It goes through content again to check all cross-reference links against aliases list.
 It outputs the aliases in cross-references to warnings.log
 """
-
+#import jsondiff
+import tableFunctions
 import frontmatter
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 import json
-import csv
 import logging
 import pathlib
 
@@ -22,48 +22,28 @@ def dirWalk(start, globPattern="**/*"):
     dirList = list(start.glob(globPattern))
     return dirList
 
-# Go through .md file types
-# Can toggle parsing of front matter
-# Can toggle finding aliases in .md body content
-def parseMdFile(filePath, frontMatterGrab=True, checkAlias=False):
-    # creates a relative path from starting directory
-    # used in logs
-    relDir = filePath.relative_to(start)
-    # Opens Markdown file
-    with open(filePath, mode='r', encoding="utf-8") as file:
-        # Loads .md file into post via frontmatter module
-        post = frontmatter.load(file)
-        # Flag for going through functions that parse front matter
-        if frontMatterGrab == True:
-            # Calls function that grabs any aliases in front matter
-            aliasGrab(post, relDir)
-            # Calls function that checks for "mapped" flag
-            mapGrab(post)
-        # Flag for going through content body to check for aliases used in cross references
-        if checkAlias == True:
-            # Calls function that checks aliases in cross references
-            aliasCheck(post, relDir)
-
-# Grab aliases from front matter
-def aliasGrab(post, relDir):
+# Add front matter to list of dict entries
+# TO DO - split this function into one that adds to itemDict and one that just parses front matter
+def addItem(post):
     aliases = post.get("aliases")
     title = post.get("title")
+    url = post.get("url")
+    map = post.get("mapped")
+    # Creates a dictionary entry for file with aliases
+    itemDict = {"Title": title, "URL": "docs.mendix.com" + url, "Front matter": "", "aliases": aliases}
+
     # If 'aliases' exists in front matter
     if aliases != None:
-        # Creates a dictionary entry for file with aliases
-        itemDict = {"File path": str(relDir), "title": title, "isMapped": "", "aliases": aliases}
-        # Appends each dictionary to aliasList
+        # Appends dictionary to aliasList
         aliasList.append(itemDict)
         # Each entry of alias in a file gets added to aliasCompare list
         for each in aliases:
             aliasCompare.append(each)
 
-# Checks for "mapped" flag in front matter
-def mapGrab(post):
-    map = post.get("mapped")
     if map is True:
-        # Adds if doc is mapped or not
-        aliasList[0]["isMapped"] = "mapped"
+        # Appends dictionary to aliasList if doc is mapped
+        itemDict["Front matter"] = "mapped"
+        aliasList.append(itemDict)
 
 # Checks for the use of aliases in cross reference links
 def aliasCheck(post, relDir):
@@ -88,11 +68,43 @@ def aliasCheck(post, relDir):
                 # Checks if the link is in the alias list
                 if cleanedLink[0] in aliasCompare:
                     # If it is an alias, adds it to log
-                    logging.basicConfig(filename='warnings.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
-                    logging.warning('Link %s in file %s is an alias, please replace', cleanedLink[0], relDir)
+                    logging.basicConfig(filename='aliasLinkWarnings.log', filemode='w', format='%(message)s')
+                    logging.warning('%d. Link %s in file %s is an alias, please replace', 1, cleanedLink[0], relDir)
+
+# Go through .md file types
+# Can toggle parsing of front matter
+# Can toggle finding aliases in .md body content
+def parseMdFile(filePath, frontMatterGrab=True, checkAlias=False):
+    # creates a relative path from starting directory
+    # used in logs
+    relDir = filePath.relative_to(start)
+    # Opens Markdown file
+    with open(filePath, mode='r', encoding="utf-8") as file:
+        # Loads .md file into post via frontmatter module
+        post = frontmatter.load(file)
+        # Flag for going through functions that parse front matter
+        if frontMatterGrab == True:
+            addItem(post)
+        # Flag for going through content body to check for aliases used in cross references
+        if checkAlias == True:
+            # Calls function that checks aliases in cross references
+            aliasCheck(post, relDir)
+
+# Compare two lists and log the difference
+def compareLists(list1: list, list2: list):
+    diff = [i for i in list1 + list2 if i not in list1 or i not in list2]
+    result = len(diff) == 0
+    # Adds differences into warning log
+    logging.basicConfig(filename='compareDocsToExcelWarnings.log', filemode='w', format='%(message)s')
+    if not result:
+        logging.warning('The lists do not match! There are %d differences:',len(diff))
+        for line in diff:
+            logging.warning('%d. %s', (diff.index(line)+1), line)
 
 # Grab working directory
-startDir = input('Specify FULL PATH to local content directory: ')
+# TO DO - the hardcoded link will need changing
+startDir = "C:\\Users\\Natasa.Kralj\\Documents\\docs\\local-development\\content\\en\\docs\\"
+#input('Specify FULL PATH to local content directory: ')
 start = pathlib.Path(startDir)
 
 # Empty lists to help with parsing data
@@ -106,19 +118,50 @@ dirList = dirWalk(start, "**/*.md")
 for path in dirList:
     parseMdFile(path, frontMatterGrab=True, checkAlias=False)
 
-# For all .md files in dirList check their text body for aliases in cross references
-for path in dirList:
-    parseMdFile(path, frontMatterGrab=False, checkAlias=True)
+# Parse excel file into managable list
+# TO DO - the hardcoded link will need changing
+myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documents\\pyScripts\\PyScripts\\mapping-example-table-V2.xlsx")
 
-# File output for testing, (un)comment below
+# Store all docs grabbed and all excel entries into sorted lists
+# This is just for testing
+docsList = sorted(aliasList, key=lambda x: x['Title'], reverse=False)
+excelList = sorted(myNewList, key=lambda x: x['Title'], reverse=False)
+
+# Prints differences between lists, if any
+compareLists(docsList, excelList)
+
+# Writes a list of all aliases as a JSON file (list of dicts)
+with open('listFromExcel.json', 'w') as logfile:
+    json.dump(myNewList, logfile)
+
+## For all .md files in dirList check their text body for aliases in cross references
+## This can be done later, after the table has been checked/updated
+# for path in dirList:
+#     parseMdFile(path, frontMatterGrab=False, checkAlias=True)
 
 # Writes a list of all aliases as a JSON file (list of dicts)
 with open('aliasList.json', 'w') as logfile:
     json.dump(aliasList, logfile)
 
-# Writes a list of all aliases as a CSV
-with open('aliasList.csv', 'w', newline='') as f:
-    fieldNames = ['File path', 'title', 'isMapped', 'aliases']
-    writer = csv.DictWriter(f, fieldnames=fieldNames)
-    writer.writeheader()
-    writer.writerows(aliasList)
+## Test for JSON comparison
+# obj1 = ""
+# obj2 = ""
+
+## Loads the saved JSON files for comparison
+# with open('listFromExcel.json', 'r') as logfile:
+#     obj1 = json.load(logfile)
+
+# with open('aliasList.json', 'r') as logfile:
+#     obj2 = json.load(logfile)
+
+# res = jsondiff.diff(obj1, obj2)
+# print(res)
+
+## Uncomment and run lines below only if table doesn't exist
+# createTablePrompt = input("Do you want to create the mapping table? (Y/n)")
+
+# if createTablePrompt.lower() == "y":
+#     tableName = input("What is the new table name?") + ".xlsx"
+#     tableFunctions.createExcelFromList(aliasList, tableName)
+# else:
+#     pass
