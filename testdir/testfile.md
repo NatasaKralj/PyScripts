@@ -1,4 +1,5 @@
 ---
+title: "My title"
 foo: bar
 num: 3
 aliases:
