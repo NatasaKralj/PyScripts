@@ -3,9 +3,6 @@ removeUnusedAttachments.py goes through all .md files to make a list of attachme
 """
 
 import os
-import json
-import csv
-import logging
 import re
 
 # Grab working directory
