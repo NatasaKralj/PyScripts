@@ -19,16 +19,16 @@ for dirPath, dirNames, allFiles in os.walk(startDir):
         # Relative file path that includes name of file
         relFilePath = os.path.relpath(filePath, startDir)
         # Pattern to find any /attachments/ followed by either ) or "
-        fullAttachmentRefSearch = '((/attachments/([-./\+\w\+ ]*)?)(\)|"))'
+        fullAttachmentRefSearch = '/attachments/([-./\+\w\+ ]*)?(?:\)|)"'
         # Checks if file is Markdown
         if name.lower().endswith('.md'):
             # Opens Markdown file
             with open(filePath, mode='r', encoding="utf-8") as file:
                 for line in file:
-                    fullSearch = re.search(fullAttachmentRefSearch,line)
-                    if fullSearch != None:
+                    fullSearch = re.findall(fullAttachmentRefSearch,line)
+                    if fullSearch != []:
                         # Creates a dictionary for file with aliases
-                        itemDict = {"File path": relFilePath, "File name": name, "Attachment Link": fullSearch.group(2)}
+                        itemDict = {"File path": relFilePath, "File name": name, "Attachment Link": fullSearch}
                         # Appends each dictionary to attachmentList
                         attachmentList.append(itemDict)
 
@@ -44,6 +44,7 @@ for dirPath, dirNames, allFiles in os.walk(attachmentDir):
         newFilePath = relFilePath.replace(os.sep, '/')
         deleteFlag = True
         for item in attachmentList:
+            # fullSearch returns a list, so we need to pull things out of it
             inList = item["Attachment Link"].endswith(newFilePath)
             if inList is True:
                 deleteFlag = False
