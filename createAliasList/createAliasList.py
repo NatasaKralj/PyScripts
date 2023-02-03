@@ -55,6 +55,7 @@ def aliasCheck(post, relDir):
     tokens = md.parse(text)
     # Takes tokens to create a SyntaxTree
     node = SyntaxTreeNode(tokens)
+    logging.basicConfig(filename='aliasLinkWarnings.log', filemode='w', format='%(message)s')
     # Walks through all tree nodes
     for node in node.walk():
         # If a node is a link type
@@ -68,7 +69,6 @@ def aliasCheck(post, relDir):
                 # Checks if the link is in the alias list
                 if cleanedLink[0] in aliasCompare:
                     # If it is an alias, adds it to log
-                    logging.basicConfig(filename='aliasLinkWarnings.log', filemode='w', format='%(message)s')
                     logging.warning('%d. Link %s in file %s is an alias, please replace', 1, cleanedLink[0], relDir)
 
 # Go through .md file types
@@ -120,7 +120,7 @@ for path in dirList:
 
 # Parse excel file into managable list
 # TO DO - the hardcoded link will need changing
-myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documents\\pyScripts\\PyScripts\\mapping-example-table-V2.xlsx")
+myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documents\\pyScripts\\PyScripts\\test.xlsx")
 
 # Store all docs grabbed and all excel entries into sorted lists
 # This is just for testing
@@ -134,14 +134,10 @@ compareLists(docsList, excelList)
 with open('listFromExcel.json', 'w') as logfile:
     json.dump(myNewList, logfile)
 
-## For all .md files in dirList check their text body for aliases in cross references
-## This can be done later, after the table has been checked/updated
+# For all .md files in dirList check their text body for aliases in cross references
+# This can be done later, after the table has been checked/updated
 # for path in dirList:
 #     parseMdFile(path, frontMatterGrab=False, checkAlias=True)
-
-# Writes a list of all aliases as a JSON file (list of dicts)
-with open('aliasList.json', 'w') as logfile:
-    json.dump(aliasList, logfile)
 
 ## Test for JSON comparison
 # obj1 = ""

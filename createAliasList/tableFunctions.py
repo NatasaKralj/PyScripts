@@ -21,15 +21,20 @@ def createExcelFromList(list, table):
         else:
             rowNumber = rowNum + 1
         # Put in values from list to cells
+        greyCell = openpyxl.styles.PatternFill("solid", fgColor="00C0C0C0")
+        scratchedCell = openpyxl.styles.PatternFill("lightGrid",fill_type=None,fgColor="00C0C0C0")
         sheet.cell(row=rowNumber, column=1, value=item["Title"])
         sheet.cell(row=rowNumber, column=2, value=item["URL"])
         sheet.cell(row=rowNumber, column=3, value=item["Front matter"])
-        sheet.cell(row=rowNumber, column=4, value="")
+        sheet.cell(row=rowNumber, column=4, value="").fill = scratchedCell
         # Aliases jump to a new blank row
         # There can be more than one
         for alias in item["aliases"]:
             aliasNumber = item["aliases"].index(alias) + 1
             rowNum = rowNumber + aliasNumber
+            sheet.cell(row=rowNum, column=1, value="").fill = scratchedCell
+            sheet.cell(row=rowNum, column=2, value="").fill = scratchedCell
+            sheet.cell(row=rowNum, column=3, value="").fill = scratchedCell
             sheet.cell(row=rowNum, column=4, value=alias)
         # Save the excel file
         workbook.save(filename=table)
