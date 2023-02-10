@@ -6,7 +6,6 @@ It outputs a CSV list of all files containing aliases.
 It goes through content again to check all cross-reference links against aliases list.
 It outputs the aliases in cross-references to warnings.log
 """
-#import jsondiff
 import tableFunctions
 import frontmatter
 from markdown_it import MarkdownIt
@@ -22,9 +21,18 @@ def dirWalk(start, globPattern="**/*"):
     dirList = list(start.glob(globPattern))
     return dirList
 
+# To setup multiple loggers
+def initLogger(name, logFile, level=logging.WARNING):
+    handler = logging.FileHandler(logFile)
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+    return logger
+
 # Add front matter to list of dict entries
-# TO DO - split this function into one that adds to itemDict and one that just parses front matter
 def addItem(post):
+    # Grabs front matter data
     aliases = post.get("aliases")
     title = post.get("title")
     url = post.get("url")
@@ -39,8 +47,8 @@ def addItem(post):
         # Each entry of alias in a file gets added to aliasCompare list
         for each in aliases:
             aliasCompare.append(each)
-
-    if map is True:
+    # If 'mapped' exists in front matter and is true
+    if map == True:
         # Appends dictionary to aliasList if doc is mapped
         itemDict["Front matter"] = "mapped"
         aliasList.append(itemDict)
@@ -55,7 +63,7 @@ def aliasCheck(post, relDir):
     tokens = md.parse(text)
     # Takes tokens to create a SyntaxTree
     node = SyntaxTreeNode(tokens)
-    logging.basicConfig(filename='aliasLinkWarnings.log', filemode='w', format='%(message)s')
+
     # Walks through all tree nodes
     for node in node.walk():
         # If a node is a link type
@@ -69,7 +77,7 @@ def aliasCheck(post, relDir):
                 # Checks if the link is in the alias list
                 if cleanedLink[0] in aliasCompare:
                     # If it is an alias, adds it to log
-                    logging.warning('%d. Link %s in file %s is an alias, please replace', 1, cleanedLink[0], relDir)
+                    aliasLogger.warning('Link %s in file %s is an alias, please replace', cleanedLink[0], relDir)
 
 # Go through .md file types
 # Can toggle parsing of front matter
@@ -91,15 +99,111 @@ def parseMdFile(filePath, frontMatterGrab=True, checkAlias=False):
             aliasCheck(post, relDir)
 
 # Compare two lists and log the difference
+# URL value of items in list is used as the first verification step. If URL values don't match the search loop is stopped.
 def compareLists(list1: list, list2: list):
-    diff = [i for i in list1 + list2 if i not in list1 or i not in list2]
+    # List for logger at end of comparison
+    diff = []
+    # For each item in docs content list
+    for item in list1:
+        # Set flags to empty/false for each item
+        end1Flag = False
+        list1Msg = ""
+        title1Flag = False
+        URL1Flag = False
+        mapped1Flag = False
+        alias1Flag = False
+        # If item URL matches to URL already in diff list, it doesn't need to be checked again
+        for d1 in diff:
+            if item["URL"] == d1["URL"]:
+                end1Flag = True
+                break
+        # As long as item URL is not in diff list, the loop below continues
+        if end1Flag == False:
+            # For each item in excel list
+            for i in list2:
+                # If the item's URL from docs list and item's URL from excel list don't match this part is skipped
+                # If item values match, flags get set to true
+                if item["URL"] == i["URL"]:
+                    URL1Flag = True
+                    if item["Title"] == i["Title"]:
+                        title1Flag = True
+                    if item["Front matter"] == i["Front matter"]:
+                        mapped1Flag = True
+                    if item["aliases"] == i["aliases"]:
+                        alias1Flag = True
+                    break
+            # If all flags are false, the entire entry is not present in excel
+            # Depending on the flags, text gets added to the warning message
+            if URL1Flag == False and title1Flag == False and mapped1Flag == False and alias1Flag == False:
+                list1Msg += "| Entry missing from Excel |"
+            else:
+                # Each flag can be true or false separately from others, each is checked
+                if URL1Flag == False:
+                    list1Msg += "| URL mismatch"
+                if title1Flag == False:
+                    list1Msg += "| Title mismatch"
+                if mapped1Flag == False:
+                    list1Msg += "| Front matter mismatch"
+                if alias1Flag == False:
+                    list1Msg += "| Aliases mismatch"
+            # If the warning message is not empty, add the item to the diff list
+            if list1Msg != "":
+                item["Warning"] = list1Msg
+                diff.append(item)
+    # Repeat loop with logic for opposite lists
+    # For each item in excel list
+    for item in list2:
+        # Set flags to empty/false for each item
+        end2Flag = False
+        list2Msg = ""
+        title2Flag = False
+        URL2Flag = False
+        mapped2Flag = False
+        alias2Flag = False
+        # If item URL matches to URL already in diff list, it doesn't need to be checked again
+        for d2 in diff:
+            if item["URL"] == d2["URL"]:
+                end2Flag = True
+                break
+        # As long as item URL is not in diff list, the loop below continues
+        if end2Flag == False:
+            # For each item in docs content list
+            for i in list1:
+                # If the item's URL from excel list and item's URL from docs list don't match this part is skipped
+                # If item values match, flags get set to true
+                if item["URL"] == i["URL"]:
+                    URL2Flag = True
+                    if item["Title"] == i["Title"]:
+                        title2Flag = True
+                    if item["Front matter"] == i["Front matter"]:
+                        mapped2Flag = True
+                    if item["aliases"] == i["aliases"]:
+                        alias2Flag = True
+                    break
+            # If all flags are false, the entire entry is not present in docs content
+            # Depending on the flags, text gets added to the warning message
+            if URL2Flag == False and title2Flag == False and mapped2Flag == False and alias2Flag == False:
+                list2Msg += "| Doc missing in repo |"
+            else:
+                # Each flag can be true or false separately from others, each is checked
+                if URL2Flag == False:
+                    list2Msg += "| URL mismatch "
+                if title2Flag == False:
+                    list2Msg += "| Title mismatch "
+                if mapped2Flag == False:
+                    list2Msg += "| Front matter mismatch "
+                if alias2Flag == False:
+                    list2Msg += "| Aliases mismatch "
+            # If the warning message is not empty, add the item to the diff list
+            if list2Msg != "":
+                item["Warning"] = list2Msg
+                diff.append(item)
+    # If the diff list is not empty then log results for each entry in list
     result = len(diff) == 0
-    # Adds differences into warning log
-    logging.basicConfig(filename='compareDocsToExcelWarnings.log', filemode='w', format='%(message)s')
     if not result:
-        logging.warning('The lists do not match! There are %d differences:',len(diff))
+        compareLogger.warning('The lists do not match! There are %d differences:',len(diff))
         for line in diff:
-            logging.warning('%d. %s', (diff.index(line)+1), line)
+            compareLogger.warning('%d. %s', (diff.index(line)+1), line)
 
 # Grab working directory
 # TO DO - the hardcoded link will need changing
@@ -110,6 +214,10 @@ start = pathlib.Path(startDir)
 # Empty lists to help with parsing data
 aliasList = []
 aliasCompare = []
+
+# Intitialize loggers for aliases and comparison
+aliasLogger = initLogger('aliasLog', 'aliasLinkWarnings.log')
+compareLogger = initLogger('compareLog', 'compareDocsToExcel.log')
 
 # Walk through all directories and files to find .md files
 dirList = dirWalk(start, "**/*.md")
@@ -124,40 +232,29 @@ myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documen
 
 # Store all docs grabbed and all excel entries into sorted lists
 # This is just for testing
-docsList = sorted(aliasList, key=lambda x: x['Title'], reverse=False)
-excelList = sorted(myNewList, key=lambda x: x['Title'], reverse=False)
-
-# Prints differences between lists, if any
-compareLists(docsList, excelList)
+docsList = sorted(aliasList, key=lambda x: x['URL'], reverse=False)
+excelList = sorted(myNewList, key=lambda x: x['URL'], reverse=False)
 
 # Writes a list of all aliases as a JSON file (list of dicts)
-with open('listFromExcel.json', 'w') as logfile:
-    json.dump(myNewList, logfile)
+# Useful for troubleshooting or if one wants to compare the list results in JSON
+# with open('listFromExcel.json', 'w') as logfile:
+#     json.dump(excelList, logfile)
+# with open('docsList.json', 'w') as logfile:
+#     json.dump(docsList, logfile)
+
+# Compares the lists, logs any differences
+compareLists(docsList, excelList)
 
 # For all .md files in dirList check their text body for aliases in cross references
 # This can be done later, after the table has been checked/updated
-# for path in dirList:
-#     parseMdFile(path, frontMatterGrab=False, checkAlias=True)
+for path in dirList:
+    parseMdFile(path, frontMatterGrab=False, checkAlias=True)
 
-## Test for JSON comparison
-# obj1 = ""
-# obj2 = ""
+# Uncomment and run lines below only if table is blank
+# populateTablePrompt = input("Do you want to populate the mapping table? (Y/n)")
 
-## Loads the saved JSON files for comparison
-# with open('listFromExcel.json', 'r') as logfile:
-#     obj1 = json.load(logfile)
-
-# with open('aliasList.json', 'r') as logfile:
-#     obj2 = json.load(logfile)
-
-# res = jsondiff.diff(obj1, obj2)
-# print(res)
-
-## Uncomment and run lines below only if table doesn't exist
-# createTablePrompt = input("Do you want to create the mapping table? (Y/n)")
-
-# if createTablePrompt.lower() == "y":
-#     tableName = input("What is the new table name?") + ".xlsx"
-#     tableFunctions.createExcelFromList(aliasList, tableName)
+# if populateTablePrompt.lower() == "y":
+#     tableName = input("What is the excel table name?") + ".xlsx"
+#     tableFunctions.populateExcelFromList(aliasList, tableName)
 # else:
 #     pass
