@@ -6,29 +6,13 @@ It outputs a CSV list of all files containing aliases.
 It goes through content again to check all cross-reference links against aliases list.
 It outputs the aliases in cross-references to warnings.log
 """
+import generics
 import tableFunctions
 import frontmatter
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 import json
-import logging
 import pathlib
-
-# Walk through all directories and files of given directory
-# globPattern can be used to specify file type, defualts to all directories and files
-# Returns a list of path objects
-def dirWalk(start, globPattern="**/*"):
-    dirList = list(start.glob(globPattern))
-    return dirList
-
-# To setup multiple loggers
-def initLogger(name, logFile, level=logging.WARNING):
-    handler = logging.FileHandler(logFile)
-    handler.setFormatter(logging.Formatter('%(message)s'))
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-    return logger
 
 # Add front matter to list of dict entries
 def addItem(post):
@@ -119,9 +103,9 @@ def compareLists(list1: list, list2: list):
                 break
         # As long as item URL is not in diff list, the loop below continues
         if end1Flag == False:
-            # For each item in excel list
+            # For each item in Excel list
             for i in list2:
-                # If the item's URL from docs list and item's URL from excel list don't match this part is skipped
+                # If the item's URL from docs list and item's URL from Excel list don't match this part is skipped
                 # If item values match, flags get set to true
                 if item["URL"] == i["URL"]:
                     URL1Flag = True
@@ -132,7 +116,7 @@ def compareLists(list1: list, list2: list):
                     if item["aliases"] == i["aliases"]:
                         alias1Flag = True
                     break
-            # If all flags are false, the entire entry is not present in excel
+            # If all flags are false, the entire entry is not present in Excel
             # Depending on the flags, text gets added to the warning message
             if URL1Flag == False and title1Flag == False and mapped1Flag == False and alias1Flag == False:
                 list1Msg += "| Entry missing from Excel |"
@@ -151,7 +135,7 @@ def compareLists(list1: list, list2: list):
                 item["Warning"] = list1Msg
                 diff.append(item)
     # Repeat loop with logic for opposite lists
-    # For each item in excel list
+    # For each item in Excel list
     for item in list2:
         # Set flags to empty/false for each item
         end2Flag = False
@@ -169,7 +153,7 @@ def compareLists(list1: list, list2: list):
         if end2Flag == False:
             # For each item in docs content list
             for i in list1:
-                # If the item's URL from excel list and item's URL from docs list don't match this part is skipped
+                # If the item's URL from Excel list and item's URL from docs list don't match this part is skipped
                 # If item values match, flags get set to true
                 if item["URL"] == i["URL"]:
                     URL2Flag = True
@@ -216,17 +200,17 @@ aliasList = []
 aliasCompare = []
 
 # Intitialize loggers for aliases and comparison
-aliasLogger = initLogger('aliasLog', 'aliasLinkWarnings.log')
-compareLogger = initLogger('compareLog', 'compareDocsToExcel.log')
+aliasLogger = generics.initLogger('aliasLog', 'aliasLinkWarnings.log')
+compareLogger = generics.initLogger('compareLog', 'compareDocsToExcel.log')
 
 # Walk through all directories and files to find .md files
-dirList = dirWalk(start, "**/*.md")
+dirList = generics.dirWalk(start, "**/*.md")
 
 # For all .md files in dirList parse their front matter
 for path in dirList:
     parseMdFile(path, frontMatterGrab=True, checkAlias=False)
 
-# Parse excel file into managable list
+# Parse Excel file into managable list
 # TO DO - the hardcoded link will need changing
 myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documents\\pyScripts\\PyScripts\\test.xlsx")
 
@@ -254,7 +238,7 @@ for path in dirList:
 # populateTablePrompt = input("Do you want to populate the mapping table? (Y/n)")
 
 # if populateTablePrompt.lower() == "y":
-#     tableName = input("What is the excel table name?") + ".xlsx"
+#     tableName = input("What is the Excel table name?") + ".xlsx"
 #     tableFunctions.populateExcelFromList(aliasList, tableName)
 # else:
 #     pass
