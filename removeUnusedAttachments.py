@@ -6,6 +6,9 @@ import os
 import re
 import logging
 
+# Create log file
+logging.basicConfig(filename='attachmentlistlog.log', filemode='w', format='%(message)s')
+
 # Grab working directory
 startDir = "C:\\Users\\Johanna.Hemminger\\docs\\content"
 #startDir = input('Specify FULL PATH to local content directory: ')
@@ -13,8 +16,13 @@ startDir = "C:\\Users\\Johanna.Hemminger\\docs\\content"
 # Empty lists to help with parsing data
 attachmentList = [] 
 
-# Create log file
-logging.basicConfig(filename='attachmentlistlog.log', filemode='w', format='%(message)s')
+# Generic walk function
+def dirWalk(start, globPattern="**/*"):
+    dirList = list(start.glob(globPattern))
+    return dirList
+
+# Walk through all directories and files to find .md files
+dirList = dirWalk(startDir, "**/*.md")
 
 # Walk through all files in directory
 for dirPath, dirNames, allFiles in os.walk(startDir):
@@ -43,6 +51,10 @@ logging.warning(attachmentList)
 # Grab attachment directory
 attachmentDir = "C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments"
 # attachmentDir = input('Specify FULL PATH to attachments directory (for example, C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments): ')
+
+# Walk through all directories and files to find .md files
+dirList = dirWalk(attachmentDir, "**/*.md")
+
 for dirPath, dirNames, allFiles in os.walk(attachmentDir):
     for name in allFiles:
         # File path that includes name of file
