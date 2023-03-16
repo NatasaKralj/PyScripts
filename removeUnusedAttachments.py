@@ -2,72 +2,63 @@
 removeUnusedAttachments.py goes through all .md files to make a list of attachment links.
 """
 
-import os
 import re
 import logging
+import pathlib
 
-# Create log file
-logging.basicConfig(filename='attachmentlistlog.log', filemode='w', format='%(message)s')
-
-# Grab working directory
-startDir = "C:\\Users\\Johanna.Hemminger\\docs\\content"
-#startDir = input('Specify FULL PATH to local content directory: ')
-
-# Empty lists to help with parsing data
-attachmentList = [] 
-
-# Generic walk function
+# Generic walk function for crawling through a directory
 def dirWalk(start, globPattern="**/*"):
     dirList = list(start.glob(globPattern))
     return dirList
 
-# Walk through all directories and files to find .md files
-dirList = dirWalk(startDir, "**/*.md")
+# Create log file so we can check out the list of attachments later
+logging.basicConfig(filename='attachmentlistlog.log', filemode='w', format='%(message)s')
 
+# Grab content directory
+startDir = "C:\\Users\\Johanna.Hemminger\\docs\\content" #startDir = input('Specify FULL PATH to local content directory: ') 
+# Define the start directory object
+start = pathlib.Path(startDir)
+
+# Create an empty list to help with parsing data
+attachmentList = [] 
+
+# Walk through all directories and files to find .md files and create a list of them
+dirList_1 = dirWalk(start, "**/*.md")
 # Walk through all files in directory
-for dirPath, dirNames, allFiles in os.walk(startDir):
-    for name in allFiles:
-        # File path that includes name of file
-        filePath = os.path.join(dirPath, name)
-        # Relative file path that includes name of file
-        relFilePath = os.path.relpath(filePath, startDir)
-        # Pattern to find any /attachments/ followed by either ) or "
-        fullAttachmentRefSearch = '/attachments/([-./\+\w= ]*)?(?:\)|")'
-        # Checks if file is Markdown
-        if name.lower().endswith('.md'):
-            # Opens Markdown file
-            with open(filePath, mode='r', encoding="utf-8") as file:
-                for line in file:
-                    fullSearch = re.findall(fullAttachmentRefSearch,line)
-                    if fullSearch != []:
-                        for searchitem in fullSearch:
-                            # Creates a dictionary for file with aliases
-                            itemDict = {"File path": relFilePath, "File name": name, "Attachment Link": searchitem}
-                            # Appends each dictionary to attachmentList
-                            attachmentList.append(itemDict)
+for dirListItem in dirList_1:
+    # Relative file path that includes name of file
+    relFilePath = dirListItem.relative_to(start) #os.path.relpath(filePath, startDir) was what we had before
+    # Pattern to find any /attachments/ followed by either ) or "
+    fullAttachmentRefSearch = '/attachments/([-./\+\w= ]*)?(?:\)|")'
+    # Opens Markdown file and goes through every line
+    with open(dirListItem, mode='r', encoding="utf-8") as mdFile:
+        for line in mdFile:
+            fullSearch = re.findall(fullAttachmentRefSearch,line)
+            if fullSearch != []:
+                for searchitem in fullSearch:
+                    # Creates a dictionary for file with aliases
+                    itemDict = {"File path": relFilePath, "File name": dirListItem.name, "Attachment Link": searchitem}
+                    # Appends each dictionary to attachmentList
+                    attachmentList.append(itemDict)                    
 logging.warning(attachmentList)
 
-# Walk through all attachments and check that they're in the attachmentList
 # Grab attachment directory
-attachmentDir = "C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments"
-# attachmentDir = input('Specify FULL PATH to attachments directory (for example, C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments): ')
+attachmentDir = "C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments" # attachmentDir = input('Specify FULL PATH to attachments directory (for example, C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments): ')
+# Define the attachment directory object
+attachment_start = pathlib.Path(attachmentDir)
 
-# Walk through all directories and files to find .md files
-dirList = dirWalk(attachmentDir, "**/*.md")
-
-for dirPath, dirNames, allFiles in os.walk(attachmentDir):
-    for name in allFiles:
-        # File path that includes name of file
-        filePath = os.path.join(dirPath, name)
-        # Relative file path that includes name of file
-        relFilePath = os.path.relpath(filePath, attachmentDir)
-        newFilePath = relFilePath.replace(os.sep, '/')
-        deleteFlag = True
-        for item in attachmentList:
-            # fullSearch returns a list, so we need to pull things out of it
-            inList = item["Attachment Link"]
-            if name in inList:
-                deleteFlag = False
-                break
-        if deleteFlag is True:
-            os.remove(filePath)
+# Walk through all directories and files and create a list, then check that they're in the attachmentList
+dirList_2 = dirWalk(attachment_start, "**/*.*")
+# For a file in dirList_2, mark that it should be deleted by default
+for file in dirList_2:
+    deleteFlag = True
+    # fullSearch returns a list, so we need to pull things (items) out of it
+    for item in attachmentList:
+        inList = item["Attachment Link"]
+        # If there's something in the attachment list that's also in dirList2, then we want to keep it
+        if file.name in inList:
+            deleteFlag = False
+            break
+    # Delete files that are in dirList2 and not in the attachment list
+    if deleteFlag is True:
+        pathlib.Path.unlink(file)
