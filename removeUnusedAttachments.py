@@ -15,7 +15,9 @@ def dirWalk(start, globPattern="**/*"):
 logging.basicConfig(filename='attachmentlistlog.log', filemode='w', format='%(message)s')
 
 # Grab content directory
-startDir = "C:\\Users\\Johanna.Hemminger\\docs\\content" #startDir = input('Specify FULL PATH to local content directory: ') 
+
+startDir = "/testdir/"
+# startDir = "C:\\Users\\Johanna.Hemminger\\docs\\content" #startDir = input('Specify FULL PATH to local content directory: ') 
 # Define the start directory object
 start = pathlib.Path(startDir)
 
@@ -43,7 +45,8 @@ for dirListItem in dirList_1:
 logging.warning(attachmentList)
 
 # Grab attachment directory
-attachmentDir = "C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments" # attachmentDir = input('Specify FULL PATH to attachments directory (for example, C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments): ')
+attachmentDir = "/static/attachments/"
+# attachmentDir = "C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments" # attachmentDir = input('Specify FULL PATH to attachments directory (for example, C:\\Users\\Johanna.Hemminger\\docs\\static\\attachments): ')
 # Define the attachment directory object
 attachment_start = pathlib.Path(attachmentDir)
 
