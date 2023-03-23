@@ -16,6 +16,17 @@ def populateExcelFromList(list, table):
         # Sets special row number for first list item
         # TO DO - see if there's a better way to set this
         if list.index(item) == 0:
+            sheet.cell(row=1, column=1, value="Title")
+            sheet.cell(row=1, column=2, value="URL")
+            sheet.cell(row=1, column=3, value="Front matter")
+            sheet.cell(row=1, column=4, value="Aliases")
+            sheet.cell(row=1, column=5, value="Product")
+            sheet.cell(row=1, column=6, value="First version")
+            sheet.cell(row=1, column=7, value="Last version")
+            sheet.cell(row=1, column=8, value="Location in product")
+            sheet.cell(row=1, column=9, value="Reported to team")
+            sheet.cell(row=1, column=10, value="Follow up")
+            sheet.cell(row=1, column=11, value="Notes")
             rowNumber = 2
         # For every subsequent list item calculate the row number
         else:

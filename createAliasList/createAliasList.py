@@ -210,9 +210,17 @@ dirList = generics.dirWalk(start, "**/*.md")
 for path in dirList:
     parseMdFile(path, frontMatterGrab=True, checkAlias=False)
 
+# Uncomment and run lines below only if table is blank
+# populateTablePrompt = input("Do you want to populate the mapping table? (Y/n)")
+# if populateTablePrompt.lower() == "y":
+#     tableName = input("What is the Excel table name?") + ".xlsx"
+#     tableFunctions.populateExcelFromList(aliasList, tableName)
+# else:
+#     pass
+
 # Parse Excel file into managable list
 # TO DO - the hardcoded link will need changing
-myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documents\\pyScripts\\PyScripts\\test.xlsx")
+myNewList = tableFunctions.createListFromExcel("C:\\Users\\Natasa.Kralj\\Documents\\pyScripts\\PyScripts\\mapping-example-table.xlsx")
 
 # Store all docs grabbed and all excel entries into sorted lists
 # This is just for testing
@@ -233,12 +241,3 @@ compareLists(docsList, excelList)
 # This can be done later, after the table has been checked/updated
 for path in dirList:
     parseMdFile(path, frontMatterGrab=False, checkAlias=True)
-
-# Uncomment and run lines below only if table is blank
-# populateTablePrompt = input("Do you want to populate the mapping table? (Y/n)")
-
-# if populateTablePrompt.lower() == "y":
-#     tableName = input("What is the Excel table name?") + ".xlsx"
-#     tableFunctions.populateExcelFromList(aliasList, tableName)
-# else:
-#     pass
