@@ -22,19 +22,24 @@ def addItem(post):
     url = post.get("url")
     map = post.get("mapped")
     # Creates a dictionary entry for file with aliases
+    append =  False
     itemDict = {"Title": title, "URL": "docs.mendix.com" + url, "Front matter": "", "aliases": aliases}
 
     # If 'aliases' exists in front matter
     if aliases != None:
-        # Appends dictionary to aliasList
-        aliasList.append(itemDict)
+        # Flags append
+        append =  True
         # Each entry of alias in a file gets added to aliasCompare list
         for each in aliases:
             aliasCompare.append(each)
     # If 'mapped' exists in front matter and is true
     if map == True:
+        # Flags append
+        append = True
         # Appends dictionary to aliasList if doc is mapped
         itemDict["Front matter"] = "mapped"
+    # Appends dictionary to aliasList
+    if append == True:
         aliasList.append(itemDict)
 
 # Checks for the use of aliases in cross reference links
@@ -211,12 +216,12 @@ for path in dirList:
     parseMdFile(path, frontMatterGrab=True, checkAlias=False)
 
 # Uncomment and run lines below only if table is blank
-# populateTablePrompt = input("Do you want to populate the mapping table? (Y/n)")
-# if populateTablePrompt.lower() == "y":
-#     tableName = input("What is the Excel table name?") + ".xlsx"
-#     tableFunctions.populateExcelFromList(aliasList, tableName)
-# else:
-#     pass
+populateTablePrompt = input("Do you want to populate the mapping table? (Y/n)")
+if populateTablePrompt.lower() == "y":
+    tableName = input("What is the Excel table name?") + ".xlsx"
+    tableFunctions.populateExcelFromList(aliasList, tableName)
+else:
+    pass
 
 # Parse Excel file into managable list
 # TO DO - the hardcoded link will need changing
@@ -237,7 +242,7 @@ excelList = sorted(myNewList, key=lambda x: x['URL'], reverse=False)
 # Compares the lists, logs any differences
 compareLists(docsList, excelList)
 
-# For all .md files in dirList check their text body for aliases in cross references
+# For all .md files in dirList check their text body for aliases instead of proper relative URL in cross references
 # This can be done later, after the table has been checked/updated
 for path in dirList:
     parseMdFile(path, frontMatterGrab=False, checkAlias=True)

@@ -8,8 +8,6 @@ def populateExcelFromList(list, table):
     workbook = openpyxl.Workbook()
 
     sheet = workbook.active
-    aliasNumber = 0
-    rowNum = 0
 
     # Go through list
     for item in list:
@@ -30,24 +28,24 @@ def populateExcelFromList(list, table):
             rowNumber = 2
         # For every subsequent list item calculate the row number
         else:
-            rowNumber = rowNum + 1
+            rowNumber = rowNumber + 1
         # Put in values from list to cells
         scratchedCell = openpyxl.styles.PatternFill("lightGrid",fill_type=None,fgColor="00C0C0C0")
         sheet.cell(row=rowNumber, column=1, value=item["Title"])
         sheet.cell(row=rowNumber, column=2, value=item["URL"])
         sheet.cell(row=rowNumber, column=3, value=item["Front matter"])
         sheet.cell(row=rowNumber, column=4, value="").fill = scratchedCell
-        # Aliases jump to a new blank row
-        # There can be more than one
-        for alias in item["aliases"]:
-            aliasNumber = item["aliases"].index(alias) + 1
-            rowNum = rowNumber + aliasNumber
-            sheet.cell(row=rowNum, column=1, value="").fill = scratchedCell
-            sheet.cell(row=rowNum, column=2, value="").fill = scratchedCell
-            sheet.cell(row=rowNum, column=3, value="").fill = scratchedCell
-            sheet.cell(row=rowNum, column=4, value=alias)
-        # Save the excel file
-        workbook.save(filename=table)
+        if item["aliases"] != None:
+            # Aliases jump to a new blank row
+            # There can be more than one
+            for alias in item["aliases"]:
+                rowNumber = rowNumber + 1
+                sheet.cell(row=rowNumber, column=1, value="").fill = scratchedCell
+                sheet.cell(row=rowNumber, column=2, value="").fill = scratchedCell
+                sheet.cell(row=rowNumber, column=3, value="").fill = scratchedCell
+                sheet.cell(row=rowNumber, column=4, value=alias)
+    # Save the excel file
+    workbook.save(filename=table)
 
 # Creates a list for comparison from excel table
 # The list matches the format of initial .md file parsing
